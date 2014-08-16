@@ -10,7 +10,7 @@
   (:require [clojure.java.io :as io]
             [clojure.string :as string])
   (:import [java.io            File InputStream FileInputStream]
-           [javax.servlet      ServletConfig]
+           [javax.servlet      ServletConfig ServletException]
            [javax.servlet.http HttpServletRequest HttpServletResponse] ))
 
 ;;; private ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -27,19 +27,21 @@
     {:name        (.getServletName config)
      :init-params (get-params-map  config) })
 
-(defn- get-servlet-fn [conf key]
-  (if-let [value (-> conf :init-params key)]
-    (let [[n s] (map symbol ((juxt namespace name) (symbol value)))]
-      (require n) (ns-resolve (the-ns n) s) )))
+(defn- get-servlet-fn [fn-name]
+  (let [[n s] (map symbol ((juxt namespace name) (symbol fn-name)))]
+    (require n)
+    (or (ns-resolve (the-ns n) s)
+      (throw (ServletException.
+        (str "The function " fn-name " specified by the web.xml configuration cannot be resolved.") )))))
 
 (defn- get-content-length
   [^HttpServletRequest request]
   (let [length (.getContentLength request)]
-    (if (>= length 0) length)))
+    (if (>= length 0) length) ))
 
 (defn- get-client-cert
   [^HttpServletRequest request]
-  (first (.getAttribute request "javax.servlet.request.X509Certificate")))
+  (first (.getAttribute request "javax.servlet.request.X509Certificate")) )
 
 (defn- get-headers
   [^HttpServletRequest request]
@@ -119,11 +121,16 @@
 ;;; implementation ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn init [^ServletConfig config]
-  (let [config (get-config-map config)
-        get-fn (partial get-servlet-fn config) ]
-    (if-let [create (get-fn :create)] (create config))
-    (reset! serve-fn   (get-fn :serve))
-    (reset! destroy-fn (get-fn :destroy)) ))
+  (let [config   (get-config-map config)
+        fn-name #(-> config :init-params %)]
+    (if-let [n (fn-name :create)]
+      ((get-servlet-fn n) config))
+    (if-let [n  (fn-name :serve)]
+      (if-let [f (get-servlet-fn n)]
+        (reset! serve-fn f) )
+        (throw (ServletException. "The required serve function could not be found in web.xml.")) )
+    (if-let [n (fn-name :destroy)]
+      (reset! destroy-fn (get-servlet-fn n))) ))
 
 (defn service [^HttpServletRequest request ^HttpServletResponse response]
   (if-let [req (get-request-map request)]
