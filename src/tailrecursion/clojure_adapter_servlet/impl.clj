@@ -10,7 +10,7 @@
   (:require [clojure.java.io :as io]
             [clojure.string :as string])
   (:import [java.io            File InputStream FileInputStream]
-           [javax.servlet      ServletConfig ServletException]
+           [javax.servlet      ServletConfig ServletContext ServletContextEvent ServletException]
            [javax.servlet.http HttpServletRequest HttpServletResponse] ))
 
 ;;; private ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -118,7 +118,7 @@
     (set-headers headers)
     (set-body body) ))
 
-;;; implementation ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; servlet implementation ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn init [^ServletConfig config]
   (let [config   (get-config-map config)
@@ -138,3 +138,17 @@
 
 (defn destroy []
   (if-let [destroy @destroy-fn] (destroy)) )
+
+;;; servlet context listener implementation ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defn get-context-param [^ServletContextEvent sce k]
+  (let [^ServletContext sc (.getServletContext sce)]
+    (.getInitParameter sc k)))
+
+(defn context-initialized [^ServletContextEvent sce]
+  (when-let [fn-name (get-context-param sce "context-create")]
+    (future ((get-servlet-fn fn-name)))))
+
+(defn context-destroyed [^ServletContextEvent sce]
+  (when-let [fn-name (get-context-param sce "context-destroy")]
+    (future ((get-servlet-fn fn-name)))))
