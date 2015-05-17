@@ -96,7 +96,7 @@ distributed with clojure under version 1.0 of the eclipse public license.  copyr
 [1]: https://travis-ci.org/tailrecursion/clojure-adapter-servlet.png?branch=master
 [2]: https://travis-ci.org/tailrecursion/clojure-adapter-servlet
 [3]: https://github.com/mmcgrana/ring/blob/master/SPEC
-[4]: https://clojars.org/tailrecursion/clojure-adapter-servlet/latest-version.svg?bustcache=1.0.1-1
+[4]: https://clojars.org/tailrecursion/clojure-adapter-servlet/latest-version.svg?bustcache=2foop
 [5]: https://clojars.org/tailrecursion/clojure-adapter-servlet
 [6]: http://docs.oracle.com/cd/E13222_01/wls/docs92/webapp/configureservlet.html
 [7]: https://github.com/ring-clojure/ring/
