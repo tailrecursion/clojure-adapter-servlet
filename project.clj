@@ -1,4 +1,4 @@
-(defproject tailrecursion/clojure-adapter-servlet "0.2.0"
+(defproject tailrecursion/clojure-adapter-servlet "0.2.1"
   :description       "A shim to create a clojure-friendly servlet container interface."
   :url               "https://github.com/tailrecursion/clojure-adapter-servlet"
   :license           {:name "Eclipse Public License"

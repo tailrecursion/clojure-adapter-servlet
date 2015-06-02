@@ -147,8 +147,8 @@
 
 (defn context-initialized [^ServletContextEvent sce]
   (when-let [fn-name (get-context-param sce "context-create")]
-    (future ((get-servlet-fn fn-name)))))
+    ((get-servlet-fn fn-name))))
 
 (defn context-destroyed [^ServletContextEvent sce]
   (when-let [fn-name (get-context-param sce "context-destroy")]
-    (future ((get-servlet-fn fn-name)))))
+    ((get-servlet-fn fn-name))))
