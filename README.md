@@ -7,9 +7,9 @@ the java servlet api is ill-suited for use with the clojure programming language
 this library decouples the cohesive functionality needed to adapt java servlet containers for use with clojure (which can be incorporated into a build task) from project-specific functions for serving requests (such as ring wrappers and handlers that belong in an application).  this separation of concerns makes it unique from other libraries with similar functionality.
 
 ## installation
-this library will be pushed to clojars once deemed production-ready.
+this library is available on clojars.
 
-<!-- [![latest version][4]][5] -->
+[![latest version][4]][5]
 
 ## application
 this library was designed to make it easy to create simple clojure servlets free of the extra dependencies and compilation steps that often complicate clojure web applications.  to use it, one need only:
@@ -96,7 +96,7 @@ distributed with clojure under version 1.0 of the eclipse public license.  copyr
 [1]: https://travis-ci.org/tailrecursion/clojure-adapter-servlet.png?branch=master
 [2]: https://travis-ci.org/tailrecursion/clojure-adapter-servlet
 [3]: https://github.com/mmcgrana/ring/blob/master/SPEC
-[4]: https://clojars.org/tailrecursion/clojure-adapter-servlet/latest-version.svg?bustcache=2foop
+[4]: https://clojars.org/tailrecursion/clojure-adapter-servlet/latest-version.svg?bustcache=0.2.1
 [5]: https://clojars.org/tailrecursion/clojure-adapter-servlet
 [6]: http://docs.oracle.com/cd/E13222_01/wls/docs92/webapp/configureservlet.html
 [7]: https://github.com/ring-clojure/ring/
