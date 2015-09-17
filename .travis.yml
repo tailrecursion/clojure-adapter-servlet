@@ -1,2 +1,8 @@
 language: clojure
-lein:     lein2
+jdk:
+- oraclejdk8
+install:
+- wget -O boot https://github.com/boot-clj/boot/releases/download/2.0.0-rc13/boot.sh
+- chmod 755 boot
+- ./boot -V
+script: ./boot test
