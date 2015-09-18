@@ -47,7 +47,7 @@ this library was designed to make it easy to create simple clojure servlets free
 ```
 * create an entry point to your application as specified by the init-params in the aformentioned web.xml file.
 
-* if this library is used outside the context of a servlet container, it will also be necessary to add the javax servlet library to the project dependecies:
+* if this library is used outside the context of a servlet container, it will also be necessary to add the javax servlet library to your project's dependecies:
 
 ```edn
 [javax.servlet/javax.servlet-api "3.1.0" :scope "provided"]
@@ -68,7 +68,7 @@ this library was designed to make it easy to create simple clojure servlets free
 ```
 
 ## considerations
-this project would not have been possible without the work done on preexisting solutions for the servlet problem, but it differers from them in the following ways:
+this project was enabled by the work done on preexisting solutions for the servlet problem, but it differers from them in the following ways:
 
 * [__ring__][7].  unlike ring's servlet, which invokes proxy to extend [HttpServlet][8] and imposes a compilation step on the consumer at project-build-time, this libary is compiled at library-build-time to include the class file expected by the java servlet container with its distribution.  clojure-adapter-servlet also exposes optional `(create)` and `(destroy)` function calls from the container with a configuration map.
 
@@ -77,7 +77,7 @@ this project would not have been possible without the work done on preexisting s
 * [__pedestal__][11].  unlike [ClojureVarServlet][12], this library only uses the java class for a shim to proxy calls to the clojure implementation; it also contains the logic to generate ring request, response, and configuration maps.  it is designed to work with ring handlers instead of interceptors.
 
 
-the `(create)` and `(serve)` functions are named differently from `init()` and `service()` because their semantics differ: create accepts a configuration map instead of a [ServletConfig][13] object as its argument, while serve is a pure function that accepts a ring request map and returns a ring response map instead of [HttpServletRequest][14] and [HttpServletResponse][15].  the behavior of `(destroy)` remain unchanged, and so does the name.
+the `(create)` and `(serve)` functions are named differently from `init()` and `service()` because their semantics differ: create accepts a configuration map instead of a [ServletConfig][13] object as its argument, while serve is a pure function that accepts a ring request map and returns a ring response map instead of [HttpServletRequest][14] and [HttpServletResponse][15].  the behavior of `(destroy)` remains unchanged; accordingly,so does the name.
 
 this library uses code from ring-servlet to ensure the request and response maps remain perfectly compatible with ring handlers.  it omits, however, the '`(merge-servlet-keys)` [function][16] that sets the legacy `:servlet`, `:servlet-request`, `:servlet-response`, `:servlet-context`, and `:servlet-context-path` functions on the request map in order to keep the interface small and clean.  this function may be added back in if it is determined that its removal breaks too many things in practice.
 
