@@ -33,12 +33,13 @@
 (def request
   (let [body (proxy [javax.servlet.ServletInputStream]   [])
         cert (proxy [java.security.cert.X509Certificate] []) ]
-    {:server-port         8080
-     :server-name         "foobar"
-     :remote-addr         "127.0.0.1"
-     :uri                 "/foo"
-     :query-string        "a=b"
-     :scheme              :http
+    {:server-port          8080
+     :server-name          "foobar"
+     :remote-addr          "127.0.0.1"
+     :uri                  "/foo"
+     :query-string         "a=b"
+     :scheme               :http
+     :protocol             "HTTP/1.1"
      :request-method       :get
      :headers              {"X-Client" ["Foo", "Bar"], "X-Server" ["Baz"]}
      :content-type         "text/plain"
@@ -55,25 +56,25 @@
     (getServletContext     []  nil)
     (getServletName        []  (conf :name)) ))
 
-(defn- servlet-request [request]
-  (let [attributes {"javax.servlet.request.X509Certificate"
-                    [(request :ssl-client-cert)]}]
+(defn- servlet-request [req]
+  (let [attrs #(hash-map "javax.servlet.request.X509Certificate" %)]
     (proxy [javax.servlet.http.HttpServletRequest] []
-      (getServerPort [] (request :server-port))
-      (getServerName [] (request :server-name))
-      (getRemoteAddr [] (request :remote-addr))
-      (getRequestURI [] (request :uri))
-      (getQueryString [] (request :query-string))
-      (getContextPath [] (request :servlet-context-path))
-      (getScheme [] (name (request :scheme)))
-      (getMethod [] (-> request :request-method name .toUpperCase))
-      (getHeaderNames [] (enumeration (keys (request :headers))))
-      (getHeaders [name] (enumeration (get-in request [:headers name])))
-      (getContentType [] (request :content-type))
-      (getContentLength [] (or (request :content-length) -1))
-      (getCharacterEncoding [] (request :character-encoding))
-      (getAttribute [k] (attributes k))
-      (getInputStream [] (request :body)))))
+      (getServerPort        []  (-> req :server-port))
+      (getServerName        []  (-> req :server-name))
+      (getRemoteAddr        []  (-> req :remote-addr))
+      (getRequestURI        []  (-> req :uri))
+      (getQueryString       []  (-> req :query-string))
+      (getContextPath       []  (-> req :servlet-context-path))
+      (getScheme            []  (-> req :scheme name))
+      (getMethod            []  (-> req :request-method name .toUpperCase))
+      (getHeaderNames       []  (-> req :headers keys enumeration))
+      (getHeaders           [k] (-> req :headers (get k) enumeration))
+      (getProtocol          []  (-> req :protocol))
+      (getContentType       []  (-> req :cotent-type))
+      (getContentLength     []  (-> req :content-length (or -1)))
+      (getCharacterEncoding []  (-> req :character-encoding))
+      (getAttribute         [k] (-> req :ssl-client-cert vector attrs (get k)))
+      (getInputStream       []  (-> req :body)) )))
 
 (defn- servlet-response [response]
   (proxy [javax.servlet.http.HttpServletResponse] []

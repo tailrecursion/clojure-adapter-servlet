@@ -7,13 +7,16 @@
 ;;;-------------------------------------------------------------------------------------------------
 
 (ns tailrecursion.clojure-adapter-servlet.impl
-  (:require [clojure.java.io :as io]
-            [clojure.string :as string])
-  (:import [java.io            File InputStream FileInputStream]
-           [javax.servlet      ServletConfig ServletContext ServletContextEvent ServletException]
-           [javax.servlet.http HttpServletRequest HttpServletResponse] ))
+  (:require
+    [clojure.java.io :as io]
+    [clojure.string  :as string] )
+  (:import
+    [java.io            File InputStream FileInputStream]
+    [java.util          Locale]
+    [javax.servlet      ServletConfig ServletContext ServletContextEvent ServletException]
+    [javax.servlet.http HttpServletRequest HttpServletResponse] ))
 
-;;; private ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; private ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def serve-fn   (atom nil))
 (def destroy-fn (atom nil))
@@ -34,89 +37,78 @@
       (throw (ServletException.
         (str "The function " fn-name " specified by the web.xml configuration cannot be resolved.") )))))
 
-(defn- get-content-length
-  [^HttpServletRequest request]
-  (let [length (.getContentLength request)]
+(defn- get-content-length [^HttpServletRequest req]
+  (let [length (.getContentLength req)]
     (if (>= length 0) length) ))
 
-(defn- get-client-cert
-  [^HttpServletRequest request]
-  (first (.getAttribute request "javax.servlet.request.X509Certificate")) )
+(defn- get-client-cert [^HttpServletRequest req]
+  (first (.getAttribute req "javax.servlet.request.X509Certificate")) )
 
-(defn- get-headers
-  [^HttpServletRequest request]
+(defn- get-headers [^HttpServletRequest req]
   (reduce
     (fn [headers, ^String name]
-      (assoc headers
-        (.toLowerCase name)
-        (->> (.getHeaders request name)
+      (assoc headers (.toLowerCase name Locale/ENGLISH)
+        (->> (.getHeaders req name)
              (enumeration-seq)
              (string/join ",") )))
     {}
-    (enumeration-seq (.getHeaderNames request) )))
+    (enumeration-seq (.getHeaderNames req) )))
 
-(defn- get-request-map
-  [^HttpServletRequest request]
-  {:server-port        (.getServerPort request)
-   :server-name        (.getServerName request)
-   :remote-addr        (.getRemoteAddr request)
-   :uri                (.getRequestURI request)
-   :query-string       (.getQueryString request)
-   :scheme             (keyword (.getScheme request))
-   :request-method     (keyword (.toLowerCase (.getMethod request)))
-   :headers            (get-headers request)
-   :content-type       (.getContentType request)
-   :content-length     (get-content-length request)
-   :character-encoding (.getCharacterEncoding request)
-   :ssl-client-cert    (get-client-cert request)
-   :body               (.getInputStream request) })
+(defn- get-request-map [^HttpServletRequest req]
+  {:server-port        (-> req .getServerPort)
+   :server-name        (-> req .getServerName)
+   :remote-addr        (-> req .getRemoteAddr)
+   :uri                (-> req .getRequestURI)
+   :query-string       (-> req .getQueryString)
+   :scheme             (-> req .getScheme keyword)
+   :request-method     (-> req .getMethod (.toLowerCase Locale/ENGLISH) keyword)
+   :protocol           (-> req .getProtocol)
+   :headers            (-> req get-headers)
+   :content-type       (-> req .getContentType)
+   :content-length     (-> req get-content-length)
+   :character-encoding (-> req .getCharacterEncoding)
+   :ssl-client-cert    (-> req get-client-cert)
+   :body               (-> req .getInputStream) })
 
-(defn- set-status
-  [^HttpServletResponse response, status]
-  (.setStatus response status))
+(defn- set-status [^HttpServletResponse res, status]
+  (.setStatus res status) )
 
-(defn- set-headers
-  [^HttpServletResponse response, headers]
+(defn- set-headers [^HttpServletResponse res, headers]
   (doseq [[key val-or-vals] headers]
     (if (string? val-or-vals)
-      (.setHeader response key val-or-vals)
+      (.setHeader res key val-or-vals)
       (doseq [val val-or-vals]
-        (.addHeader response key val) )))
+        (.addHeader res key val) )))
   (when-let [content-type (get headers "Content-Type")]
-    (.setContentType response content-type) ))
+    (.setContentType res content-type) ))
 
-(defn- set-body
-  [^HttpServletResponse response, body]
+(defn- set-body [^HttpServletResponse res, body]
   (cond
     (string? body)
-      (with-open [writer (.getWriter response)]
+      (with-open [writer (.getWriter res)]
         (.print writer body))
     (seq? body)
-      (with-open [writer (.getWriter response)]
+      (with-open [writer (.getWriter res)]
         (doseq [chunk body]
           (.print writer (str chunk))))
     (instance? InputStream body)
       (with-open [^InputStream b body]
-        (io/copy b (.getOutputStream response) ))
+        (io/copy b (.getOutputStream res) ))
     (instance? File body)
       (let [^File f body]
         (with-open [stream (FileInputStream. f)]
-          (set-body response stream) ))
+          (set-body res stream) ))
     (nil? body)
       nil
     :else
       (throw (Exception. ^String (format "Unrecognized body: %s" body)) )))
 
-(defn- set-response-map
-  {:arglists '([response response-map])}
-  [^HttpServletResponse response, {:keys [status headers body]}]
-  (when-not response
+(defn- set-response-map [^HttpServletResponse res {:keys [status headers body]}]
+  (when-not res
     (throw (Exception. "Null response given.")) )
   (when status
-    (set-status response status) )
-  (doto response
-    (set-headers headers)
-    (set-body body) ))
+    (set-status res status) )
+  (doto res (set-headers headers) (set-body body) ))
 
 ;;; servlet implementation ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -132,14 +124,14 @@
     (if-let [n (fn-name :destroy)]
       (reset! destroy-fn (get-servlet-fn n))) ))
 
-(defn service [^HttpServletRequest request ^HttpServletResponse response]
-  (if-let [req (get-request-map request)]
-    (set-response-map response (@serve-fn req) )))
+(defn service [^HttpServletRequest req ^HttpServletResponse res]
+  (if-let [req (get-request-map req)]
+    (set-response-map res (@serve-fn req) )))
 
 (defn destroy []
   (if-let [destroy @destroy-fn] (destroy)) )
 
-;;; servlet context listener implementation ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; servlet context listener implementation ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn get-context-param [^ServletContextEvent sce k]
   (let [^ServletContext sc (.getServletContext sce)]
