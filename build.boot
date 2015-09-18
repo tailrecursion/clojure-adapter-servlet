@@ -4,17 +4,23 @@
   :target-path      "tgt"
   :dependencies  '[[org.clojure/clojure             "1.7.0"  :scope "provided"]
                    [javax.servlet/javax.servlet-api "3.1.0"  :scope "provided"]
-                   [adzerk/bootlaces                "0.1.11" :scope "test"]
+                   [adzerk/bootlaces                "0.1.12" :scope "test"]
                    [adzerk/boot-test                "1.0.4"  :scope "test"] ]
- :repositories  [["clojars"       "https://clojars.org/repo/"]
-                 ["maven-central" "https://repo1.maven.org/maven2/"] ])
+ :repositories   [["clojars"       "https://clojars.org/repo/"]
+                  ["maven-central" "https://repo1.maven.org/maven2/"] ])
 (require
   '[adzerk.bootlaces :refer :all]
   '[adzerk.boot-test :refer [test]] )
 
-(def +version+ "1.0.0-SNAPSHOT")
+(def +version+ "0.2.2")
 
 (bootlaces! +version+)
+
+(replace-task! [b build-jar]
+  (fn [& xs] (comp (javac) (apply b xs)) ))
+
+(deftask build []
+  (comp (test) (build-jar)) )
 
 (deftask develop []
   (comp (wait) (speak) (javac) (test)) )
