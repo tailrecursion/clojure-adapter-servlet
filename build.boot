@@ -16,8 +16,9 @@
 
 (bootlaces! +version+)
 
-(replace-task! [b build-jar]
-  (fn [& xs] (comp (javac) (apply b xs)) ))
+(replace-task!
+  [b build-jar] (fn [& xs] (comp (javac) (apply b xs)))
+  [t test]      (fn [& xs] (comp (javac) (apply t xs))) )
 
 (deftask build []
   (comp (test) (build-jar)) )
